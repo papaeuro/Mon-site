@@ -1,18 +1,63 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aʀᴛㅤᴇᴜʀᴏㅤ❕</title>
+    <title>Aʀᴛㅤᴇᴜʀᴏㅤ❕ - NEXUS EFFECT</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; color: white; font-family: sans-serif; }
-        canvas { display: block; }
-        .ui { position: absolute; bottom: 20px; width: 100%; text-align: center; pointer-events: none; }
+        body { margin: 0; background: #000; overflow: hidden; color: #0ff; font-family: 'Courier New', monospace; }
+        canvas { display: block; filter: drop-shadow(0 0 8px #0ff); }
+        
+        .ui-overlay {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .btn-whatsapp {
+            background: #25D366;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 0 20px rgba(37, 211, 102, 0.5);
+            animation: pulse 1.5s infinite;
+            pointer-events: auto;
+            font-family: sans-serif;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .glitch-text {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            opacity: 0.8;
+            color: #f0f;
+            text-shadow: 2px 2px #0ff;
+        }
     </style>
 </head>
 <body>
     <canvas id="canvas"></canvas>
-    <div class="ui">Touche l'écran pour décomposer</div>
+    
+    <div class="ui-overlay">
+        <div class="glitch-text">TOUCHER POUR DÉCOMPOSER</div>
+        <a href="whatsapp://send?text=Regarde ce site de fou ! Touche l'écran pour voir l'effet : https://papaeuro.github.io/Mon-site/" class="btn-whatsapp">
+            PARTAGER SUR WHATSAPP 🚀
+        </a>
+    </div>
 
     <script>
         const canvas = document.getElementById('canvas');
@@ -27,11 +72,10 @@
             constructor(x, y) {
                 this.x = x; this.y = y;
                 this.originX = x; this.originY = y;
-                this.color = '#00ffcc';
+                this.color = Math.random() > 0.5 ? '#0ff' : '#f0f';
                 this.size = 2;
                 this.vx = 0; this.vy = 0;
-                this.force = 0; this.angle = 0;
-                this.friction = 0.95; this.ease = 0.1;
+                this.friction = 0.9; this.ease = 0.05;
             }
             draw() {
                 ctx.fillStyle = this.color;
@@ -42,10 +86,9 @@
                 let dy = my - this.y;
                 let dist = Math.sqrt(dx*dx + dy*dy);
                 if (dist < 100) {
-                    this.angle = Math.atan2(dy, dx);
-                    this.force = (100 - dist) / 100;
-                    this.vx -= this.force * Math.cos(this.angle) * 5;
-                    this.vy -= this.force * Math.sin(this.angle) * 5;
+                    let angle = Math.atan2(dy, dx);
+                    this.vx -= Math.cos(angle) * 8;
+                    this.vy -= Math.sin(angle) * 8;
                 }
                 this.vx *= this.friction; this.vy *= this.friction;
                 this.x += this.vx + (this.originX - this.x) * this.ease;
@@ -55,10 +98,11 @@
 
         function init() {
             ctx.fillStyle = 'white';
-            ctx.font = '30px Arial';
+            ctx.font = 'bold 35px Arial';
             ctx.textAlign = 'center';
             ctx.fillText(text, canvas.width/2, canvas.height/2);
             const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            particles = [];
             for (let y = 0; y < canvas.height; y += 4) {
                 for (let x = 0; x < canvas.width; x += 4) {
                     if (data[(y * canvas.width + x) * 4 + 3] > 128) {
@@ -68,9 +112,13 @@
             }
         }
 
-        let mouse = { x: 0, y: 0 };
-        window.addEventListener('mousemove', e => { mouse.x = e.x; mouse.y = e.y; });
-        window.addEventListener('touchstart', e => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; });
+        let mouse = { x: -500, y: -500 };
+        const handleInteraction = e => {
+            mouse.x = e.touches ? e.touches[0].clientX : e.clientX;
+            mouse.y = e.touches ? e.touches[0].clientY : e.clientY;
+        };
+        window.addEventListener('mousemove', handleInteraction);
+        window.addEventListener('touchstart', handleInteraction);
 
         function animate() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -78,8 +126,10 @@
             requestAnimationFrame(animate);
         }
         init(); animate();
+        window.onresize = init;
     </script>
-</body><script src="https://pl29143512.profitablecpmratenetwork.com/c1/1d/2b/c11d2bf0222a5de5e208c200051fe32d.js"></script>
+
+    <script src="https://pl29143512.profitablecpmratenetwork.com/c1/1d/2b/c11d2bf0222a5de5e208c200051fe32d.js"></script>
     <script src="https://pl29143513.profitablecpmratenetwork.com/ef/cb/38/efcb38ab03bf39732d0afef6c1c17655.js"></script>
-    https://www.profitablecpmratenetwork.com/zr3rrt9c?key=41a9267d8ee0f4fe87afc967f3adad71
+</body>
 </html>
