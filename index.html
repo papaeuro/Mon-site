@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aʀᴛㅤᴇᴜʀᴏㅤ❕</title>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; color: white; font-family: sans-serif; }
+        canvas { display: block; }
+        .ui { position: absolute; bottom: 20px; width: 100%; text-align: center; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="ui">Touche l'écran pour décomposer</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let text = "Aʀᴛㅤᴇᴜʀᴏㅤ❕";
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        class Particle {
+            constructor(x, y) {
+                this.x = x; this.y = y;
+                this.originX = x; this.originY = y;
+                this.color = '#00ffcc';
+                this.size = 2;
+                this.vx = 0; this.vy = 0;
+                this.force = 0; this.angle = 0;
+                this.friction = 0.95; this.ease = 0.1;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.size, this.size);
+            }
+            update(mx, my) {
+                let dx = mx - this.x;
+                let dy = my - this.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < 100) {
+                    this.angle = Math.atan2(dy, dx);
+                    this.force = (100 - dist) / 100;
+                    this.vx -= this.force * Math.cos(this.angle) * 5;
+                    this.vy -= this.force * Math.sin(this.angle) * 5;
+                }
+                this.vx *= this.friction; this.vy *= this.friction;
+                this.x += this.vx + (this.originX - this.x) * this.ease;
+                this.y += this.vy + (this.originY - this.y) * this.ease;
+            }
+        }
+
+        function init() {
+            ctx.fillStyle = 'white';
+            ctx.font = '30px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(text, canvas.width/2, canvas.height/2);
+            const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            for (let y = 0; y < canvas.height; y += 4) {
+                for (let x = 0; x < canvas.width; x += 4) {
+                    if (data[(y * canvas.width + x) * 4 + 3] > 128) {
+                        particles.push(new Particle(x, y));
+                    }
+                }
+            }
+        }
+
+        let mouse = { x: 0, y: 0 };
+        window.addEventListener('mousemove', e => { mouse.x = e.x; mouse.y = e.y; });
+        window.addEventListener('touchstart', e => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; });
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(mouse.x, mouse.y); p.draw(); });
+            requestAnimationFrame(animate);
+        }
+        init(); animate();
+    </script>
+</body>
+</html>
