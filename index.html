@@ -15,7 +15,8 @@
 
         canvas { display: block; }
 
-        #reward-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
+        /* MODAL DE RÉCOMPENSE */
+        #reward-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
         #reward-modal.active { display: flex; }
         #reward-img { width: 80%; max-width: 350px; border: 3px solid #f0f; border-radius: 15px; box-shadow: 0 0 30px #f0f; margin-bottom: 20px; }
         
@@ -37,11 +38,11 @@
     <canvas id="gameCanvas"></canvas>
 
     <div id="reward-modal">
-        <h1 style="color:#f0f; text-shadow: 0 0 10px #f0f;">NOUVELLE CARTE DÉBLOQUÉE !</h1>
-        <img id="reward-img" src="" alt="Reward">
+        <h1 style="color:#0ff; text-shadow: 0 0 10px #0ff;">OBJECTIF ATTEINT !</h1>
+        <img id="reward-img" src="" alt="Loot">
         <div style="display:flex;">
-            <a id="dl-link" href="" download class="btn-ui btn-get">TÉLÉCHARGER (TROPHEE)</a>
-            <button onclick="closeLoot()" class="btn-ui btn-next">CONTINUER LA QUÊTE</button>
+            <a id="dl-link" href="" download class="btn-ui btn-get">RÉCUPÉRER</a>
+            <button onclick="closeLoot()" class="btn-ui btn-next">CONTINUER</button>
         </div>
     </div>
 
@@ -51,81 +52,76 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        // --- CONFIGURATION ADSTERRA ---
         const DIRECT_LINK = "https://www.profitablecpmratenetwork.com/zr3rrt9c?key=41a9267d8ee0f4fe87afc967f3adad71";
-        const LOOT_LINK = "COLLE_ICI_UN_DEUXIEME_LIEN_DIRECT_LINK"; // En option pour le loot
         let hasClickedOnce = false;
         
-        // --- GAME ASSETS & PALIERS ---
+        // --- CHARGEMENT DE TES IMAGES ---
+        const imgPlayer = new Image();
+        imgPlayer.src = 'player.png'; 
+        const imgObstacle = new Image();
+        imgObstacle.src = 'barrière.png';
+
         let score = 0;
         let milestones = [100, 500, 1000, 1300, 1500, 2000, 2600, 3000];
         let ranks = ["Recrue", "Bronze Antique", "Diamant Noir", "Cyber Élite", "Maître Éclat", "Mythe Phonk", "Art Euro Suprême", "Titan Cosmique", "Dieu Matrice"];
-
         let gameActive = true;
-        
-        // --- CHARGEMENT DE L'AVATAR (Footballeur technique) ---
-        const playerImg = new Image();
-        playerImg.src = 'https://i.ibb.co/L5hY5Fk/Brazilian-Player-Articulations.png'; // Ton image générée
-        
-        let player = { x: 50, y: canvas.height - 180, w: 100, h: 140, dy: 0, jumpForce: 18, gravity: 0.8, grounded: false, animTime: 0 };
+
+        let player = { 
+            x: 60, y: canvas.height - 210, w: 110, h: 160, 
+            dy: 0, jumpForce: 18, gravity: 0.7, grounded: false, 
+            animFrame: 0 
+        };
         let obstacles = [];
         let spawnTimer = 0;
 
-        // --- DESSIN DU SQUELETTE D'ARTICULATION ---
-        function drawSkeleton(px, py, width, height, time) {
-            ctx.strokeStyle = 'rgba(0, 210, 255, 0.7)'; // Cyan lumineux
-            ctx.lineWidth = 2;
-            ctx.fillStyle = '#fff'; // Point blanc
+        // --- SYSTÈME D'ARTICULATION VIRTUEL ---
+        function drawJoints(px, py, pw, ph, frame) {
+            ctx.save();
+            const time = frame * 0.15;
+            const bounce = Math.sin(time) * 5;
             
-            // Calculer les mouvements des articulations basés sur le temps (animation)
-            let jointTime = time * 0.1;
-            
-            // 1. Définir les points d'articulation (Genou, Hanche, Épaule, Coude)
-            // C'est une simulation simplifiée d'un mouvement de course
-            let kneeOffset = Math.sin(jointTime) * 15;
-            let ankleOffset = Math.sin(jointTime + Math.PI/2) * 20;
-            let elbowOffset = Math.cos(jointTime) * 10;
-            
-            let points = [
-                { id: 'hip',   x: px + width * 0.5, y: py + height * 0.4 },
-                { id: 'knee',  x: px + width * 0.5 + kneeOffset, y: py + height * 0.7 },
-                { id: 'ankle', x: px + width * 0.5 + ankleOffset, y: py + height * 0.95 },
-                { id: 'shldr', x: px + width * 0.5, y: py + height * 0.15 },
-                { id: 'elbow', x: px + width * 0.2 + elbowOffset, y: py + height * 0.25 }
+            // Positions relatives des articulations (estimées sur ton image player.png)
+            const joints = [
+                { id: 'tête', x: px + pw*0.55, y: py + ph*0.15 + bounce },
+                { id: 'épaule', x: px + pw*0.45, y: py + ph*0.35 + bounce },
+                { id: 'coude', x: px + pw*0.30 + Math.cos(time)*10, y: py + ph*0.45 },
+                { id: 'hanche', x: px + pw*0.50, y: py + ph*0.60 },
+                { id: 'genou', x: px + pw*0.55 + Math.sin(time)*15, y: py + ph*0.80 },
+                { id: 'pied', x: px + pw*0.45 + Math.sin(time+0.5)*20, y: py + ph*0.95 }
             ];
+
+            // Dessin des os néon
+            ctx.strokeStyle = '#0ff';
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 5;
+            ctx.shadowColor = '#0ff';
             
-            // 2. Dessiner les os (lignes)
             ctx.beginPath();
-            ctx.moveTo(points[0].x, points[0].y); // Hip
-            ctx.lineTo(points[1].x, points[1].y); // to Knee
-            ctx.lineTo(points[2].x, points[2].y); // to Ankle
+            ctx.moveTo(joints[1].x, joints[1].y); ctx.lineTo(joints[2].x, joints[2].y); // Bras
+            ctx.moveTo(joints[3].x, joints[3].y); ctx.lineTo(joints[4].x, joints[4].y); // Cuisse
+            ctx.lineTo(joints[5].x, joints[5].y); // Jambe
             ctx.stroke();
-            
-            ctx.beginPath();
-            ctx.moveTo(points[3].x, points[3].y); // Shoulder
-            ctx.lineTo(points[4].x, points[4].y); // to Elbow
-            ctx.stroke();
-            
-            // 3. Dessiner les articulations (points)
-            points.forEach(pt => {
+
+            // Dessin des points d'articulation
+            ctx.fillStyle = '#fff';
+            joints.forEach(j => {
                 ctx.beginPath();
-                ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
+                ctx.arc(j.x, j.y, 3, 0, Math.PI*2);
                 ctx.fill();
-                ctx.stroke();
             });
+            ctx.restore();
         }
 
         function spawnObstacle() {
-            obstacles.push({ x: canvas.width, y: canvas.height - 110, w: 40, h: 60, color: '#ff0055' });
+            obstacles.push({ x: canvas.width, y: canvas.height - 130, w: 70, h: 80, passed: false });
         }
 
         function update() {
             if (!gameActive) return;
 
-            // Gravité joueur
             player.dy += player.gravity;
             player.y += player.dy;
-            player.animTime++; // Incrémenter l'animation pour les articulations
+            player.animFrame++;
 
             if (player.y + player.h > canvas.height - 50) {
                 player.y = canvas.height - 50 - player.h;
@@ -133,24 +129,22 @@
                 player.grounded = true;
             }
 
-            // Gestion des Obstacles
             spawnTimer++;
-            if (spawnTimer > (60 + Math.random() * 40)) { spawnObstacle(); spawnTimer = 0; }
+            if (spawnTimer > 90) { spawnObstacle(); spawnTimer = 0; }
 
             obstacles.forEach((obs, i) => {
-                obs.x -= 8; // Vitesse
+                obs.x -= 7;
 
-                // Collision simplifiée
-                if (player.x < obs.x + obs.w && player.x + player.w > obs.x &&
-                    player.y + player.h > obs.y) {
-                    // Collision : Reset mais garde le score
-                    obstacles = []; player.dy = 0; player.grounded = true;
+                // Collision avec ta barrière.png
+                if (player.x < obs.x + obs.w - 10 && player.x + player.w - 20 > obs.x + 10 &&
+                    player.y + player.h > obs.y + 10) {
+                    obstacles = []; // Reset obstacles en cas de choc
                 }
 
                 if (obs.x + obs.w < player.x && !obs.passed) {
-                    obs.passed = true; addXP();
+                    obs.passed = true;
+                    addXP();
                 }
-
                 if (obs.x + obs.w < 0) obstacles.splice(i, 1);
             });
         }
@@ -162,65 +156,67 @@
             let prev = [...milestones].reverse().find(m => m <= score) || 0;
             let percent = ((score - prev) / (next - prev)) * 100;
             document.getElementById('xp-bar').style.width = percent + "%";
-            milestones.forEach((m, idx) => { if (score === m) { openLoot(m, ranks[idx+1]); } });
-        }
-
-        function draw() {
-            ctx.fillStyle = '#0a0a0c'; // Fond d'écran
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Sol technique néon
-            ctx.strokeStyle = '#f0f'; ctx.lineWidth = 4;
-            ctx.beginPath(); ctx.moveTo(0, canvas.height - 50); ctx.lineTo(canvas.width, canvas.height - 50); ctx.stroke();
-
-            // Dessiner l'Avatar (si chargé)
-            if (playerImg.complete) {
-                ctx.drawImage(playerImg, player.x, player.y, player.w, player.h);
-            }
-
-            // --- ESSENTIEL : Dessiner le squelette technique ---
-            drawSkeleton(player.x, player.y, player.w, player.h, player.animTime);
-
-            // Obstacles копии (Barrières jaunes et noires)
-            obstacles.forEach(obs => {
-                // Fond de l'obstacle
-                ctx.fillStyle = '#333';
-                ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
-                // Bandage technique jaune et noir
-                ctx.strokeStyle = '#ffcc00'; ctx.lineWidth = 6;
-                ctx.beginPath(); ctx.moveTo(obs.x + 5, obs.y + 10); ctx.lineTo(obs.x + obs.w - 5, obs.y + obs.h - 10); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(obs.x + 15, obs.y + 10); ctx.lineTo(obs.x + obs.w - 15, obs.y + obs.h - 10); ctx.stroke();
+            
+            milestones.forEach((m, idx) => {
+                if (score === m) openLoot(m, ranks[idx+1]);
             });
         }
 
-        function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
+        function draw() {
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Sol
+            ctx.strokeStyle = '#0ff'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(0, canvas.height-50); ctx.lineTo(canvas.width, canvas.height-50); ctx.stroke();
+
+            // 1. Dessiner le JOUEUR (player.png)
+            if (imgPlayer.complete) {
+                ctx.save();
+                // Effet de balancement pendant la course
+                let tilt = player.grounded ? Math.sin(player.animFrame * 0.15) * 0.03 : 0;
+                ctx.translate(player.x + player.w/2, player.y + player.h/2);
+                ctx.rotate(tilt);
+                ctx.drawImage(imgPlayer, -player.w/2, -player.h/2, player.w, player.h);
+                ctx.restore();
+            }
+
+            // 2. Dessiner les ARTICULATIONS par-dessus
+            drawJoints(player.x, player.y, player.w, player.h, player.animFrame);
+
+            // 3. Dessiner les BARRIÈRES (barrière.png)
+            obstacles.forEach(obs => {
+                if (imgObstacle.complete) {
+                    ctx.drawImage(imgObstacle, obs.x, obs.y, obs.w, obs.h);
+                }
+            });
+        }
 
         function openLoot(val, rankName) {
             gameActive = false;
-            
-            // --- MONETISATION 2 : Loot Link ---
-            //window.open(LOOT_LINK, '_blank'); 
-
             document.getElementById('rank-name').innerText = "RANG : " + rankName;
-            const imgPath = `rewards_${val}.png`; // Utilise tes fichiers existants sur GitHub
+            const imgPath = `rewards_${val}.png`;
             document.getElementById('reward-img').src = imgPath;
             document.getElementById('dl-link').href = imgPath;
             document.getElementById('reward-modal').classList.add('active');
         }
 
-        function closeLoot() { document.getElementById('reward-modal').classList.remove('active'); gameActive = true; }
+        function closeLoot() {
+            document.getElementById('reward-modal').classList.remove('active');
+            gameActive = true;
+        }
 
-        window.addEventListener('touchstart', e => {
+        function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
+
+        window.addEventListener('touchstart', () => {
             if (!hasClickedOnce) { window.open(DIRECT_LINK, '_blank'); hasClickedOnce = true; }
-            if (modal.classList.contains('active')) return;
-            if (player.grounded) { player.dy = -player.jumpForce; player.grounded = false; }
+            if (player.grounded && gameActive) {
+                player.dy = -player.jumpForce;
+                player.grounded = false;
+            }
         });
 
-        // Charger l'image avant de lancer le jeu
-        playerImg.onload = () => { gameLoop(); };
-        window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; init(); };
-
+        imgPlayer.onload = () => { gameLoop(); };
     </script>
 </body>
-    </html>
-    
+</html>
