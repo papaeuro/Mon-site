@@ -3,242 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aʀᴛㅤᴇᴜʀᴏㅤ❕ - CLIC CHALLENGE</title>
+    <title>Aʀᴛㅤᴇᴜʀᴏㅤ❕ - ASCENSION RPG</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; color: #fff; font-family: 'Arial Black', sans-serif; perspective: 1000px; }
+        @import url('https://fonts.googleapis.com/css2?family=Teko:wght@500;700&display=swap');
+
+        body { 
+            margin: 0; background: #0a0a0c; color: #fff; 
+            font-family: 'Teko', sans-serif; overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;
+        }
         
-        #ui-header { position: absolute; top: 20px; width: 100%; text-align: center; z-index: 100; pointer-events: none; transform: rotateX(20deg); }
-        #score { font-size: 60px; background: linear-gradient(to bottom, #fff, #0ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 15px #0ff); }
-        #rank { font-size: 14px; color: #f0f; text-transform: uppercase; letter-spacing: 3px; }
-        #goal { font-size: 10px; color: #0ff; margin-top: 5px; }
+        /* HUD - Interface RPG */
+        #rpg-hud {
+            position: absolute; top: 0; width: 100%; max-width: 500px;
+            padding: 20px; box-sizing: border-box; background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%);
+        }
 
-        canvas { display: block; transition: transform 0.1s; }
-        .shake { animation: shake 0.2s; }
-        @keyframes shake { 0% { transform: translate(2px, 2px); } 50% { transform: translate(-2px, -2px); } 100% { transform: translate(0, 0); } }
+        .player-info { display: flex; justify-content: space-between; font-size: 24px; text-transform: uppercase; letter-spacing: 1px; }
+        .player-name { color: #00d2ff; text-shadow: 0 0 10px #00d2ff; }
+        .player-rank { color: #f0f; text-shadow: 0 0 10px #f0f; }
 
-        .floating-num { position: absolute; color: #f0f; font-weight: bold; pointer-events: none; animation: floatUp 0.8s forwards; text-shadow: 0 0 10px #f0f; z-index: 1000; font-size: 20px; }
-        @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-120px); opacity: 0; } }
+        /* Barre d'XP */
+        .xp-container { width: 100%; background: #222; height: 25px; border-radius: 5px; margin-top: 15px; border: 2px solid #333; position: relative; overflow: hidden; box-shadow: 0 0 10px rgba(0, 210, 255, 0.2); }
+        .xp-bar { height: 100%; background: linear-gradient(90deg, #00d2ff, #f0f); width: 0%; transition: width 0.1s linear; }
+        .xp-text { position: absolute; top: 0; width: 100%; text-align: center; line-height: 25px; font-size: 20px; font-weight: bold; text-shadow: 1px 1px 2px #000; }
 
-        /* MODAL DE RÉCOMPENSE */
+        /* Zone d'action centrale */
+        #action-zone {
+            width: 300px; height: 300px; border-radius: 50%;
+            background: radial-gradient(circle, #1a1a24 0%, #0a0a0c 70%);
+            border: 4px dashed #00d2ff; display: flex; align-items: center; justify-content: center;
+            font-size: 40px; cursor: pointer; user-select: none; transition: 0.1s;
+            box-shadow: 0 0 50px rgba(0, 210, 255, 0.1) inset, 0 0 30px rgba(0, 210, 255, 0.2);
+            animation: pulse 4s infinite alternate;
+        }
+        #action-zone:active { transform: scale(0.95); border-color: #f0f; box-shadow: 0 0 50px rgba(255, 0, 255, 0.3) inset; }
+        @keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(1.05); } }
+
+        /* Dégâts flottants (Les clics) */
+        .damage-text {
+            position: absolute; color: #ff3366; font-weight: bold; font-size: 35px;
+            pointer-events: none; animation: dmgFloat 0.6s forwards; text-shadow: 0 0 5px #ff0000; z-index: 100;
+        }
+        @keyframes dmgFloat { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-80px) scale(1.5); opacity: 0; } }
+
+        /* MODAL DE RÉCOMPENSE (Loot) */
         #reward-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.95); display: none;
-            justify-content: center; align-items: center; flex-direction: column;
-            z-index: 10000;
+            justify-content: center; align-items: center; flex-direction: column; z-index: 10000;
         }
         #reward-modal.active { display: flex; }
+        #reward-img { width: 85%; max-width: 400px; border-radius: 10px; border: 3px solid #00d2ff; box-shadow: 0 0 30px #00d2ff; margin-bottom: 20px; }
         
-        #reward-container { position: relative; width: 85%; max-width: 400px; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; }
-        #reward-img { width: 100%; border-radius: 15px; box-shadow: 0 0 40px #0ff; border: 2px solid #0ff; }
-        
-        #reward-placeholder {
-            position: absolute; display: none; width: 150px; height: 150px;
-            border-radius: 50%; background: #000; border: 4px solid #f0f; box-shadow: 0 0 30px #f0f;
-            justify-content: center; align-items: center; flex-direction: column; font-family: 'Arial Black', sans-serif;
-        }
-        #reward-modal.img-error #reward-img { display: none; }
-        #reward-modal.img-error #reward-placeholder { display: flex; }
-
         .btn-group { display: flex; gap: 15px; }
-        .btn-ui { padding: 15px 25px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; text-decoration: none; font-size: 14px; transition: 0.2s; font-family: sans-serif; }
+        .btn-ui { padding: 10px 30px; border: none; font-size: 22px; font-family: 'Teko', sans-serif; text-transform: uppercase; cursor: pointer; text-decoration: none; border-radius: 5px; }
         .btn-download { background: #00d2ff; color: #000; box-shadow: 0 0 15px #00d2ff; }
-        .btn-close { background: #ff00ff; color: #fff; box-shadow: 0 0 15px #ff00ff; }
-        .btn-ui:active { transform: scale(0.95); }
+        .btn-close { background: #f0f; color: #fff; box-shadow: 0 0 15px #f0f; }
 
-        .bottom-ui { position: absolute; bottom: 30px; width: 100%; text-align: center; z-index: 100; }
-        .btn-whatsapp { display: inline-block; background: #25D366; color: white; padding: 15px 30px; border-radius: 15px; text-decoration: none; font-weight: bold; box-shadow: 0 10px 0 #128C7E; pointer-events: auto; }
+        .btn-whatsapp { position: absolute; bottom: 30px; background: #25D366; color: white; padding: 10px 30px; font-size: 22px; text-decoration: none; border-radius: 5px; text-transform: uppercase; box-shadow: 0 5px 0 #128C7E; }
     </style>
 </head>
 <body id="body">
 
-    <div id="ui-header">
-        <div id="rank">RANG : RECRUE</div>
-        <div id="score">0</div>
-        <div id="goal">OBJECTIF : 100 🔋</div>
+    <div id="rpg-hud">
+        <div class="player-info">
+            <div class="player-name">Aʀᴛㅤᴇᴜʀᴏㅤ❕</div>
+            <div class="player-rank" id="rank-text">Recrue</div>
+        </div>
+        <div class="xp-container">
+            <div class="xp-bar" id="xp-bar"></div>
+            <div class="xp-text" id="xp-text">XP: 0 / 100</div>
+        </div>
+    </div>
+
+    <div id="action-zone">
+        FARMER XP
     </div>
 
     <div id="reward-modal">
-        <div id="reward-name" style="font-size: 22px; color: #fff; margin-bottom: 15px; text-shadow: 0 0 10px #0ff;">TROPHÉE DÉBLOQUÉ !</div>
-        
-        <div id="reward-container">
-            <img id="reward-img" src="" alt="Récompense" onerror="handleRewardError()">
-            <div id="reward-placeholder">
-                <div style="font-size: 60px; color: #fff;">€</div>
-                <div style="font-size: 14px; color: #0ff;" id="placeholder-val">100</div>
-            </div>
-        </div>
-
+        <div style="font-size: 40px; color: #fff; margin-bottom: 10px; text-shadow: 0 0 15px #0ff;">NOUVEAU RANG ATTEINT !</div>
+        <img id="reward-img" src="" alt="Loot" onerror="this.style.display='none'">
         <div class="btn-group">
-            <a id="download-btn" href="" download class="btn-ui btn-download">TÉLÉCHARGER 📥</a>
-            <button id="close-modal" class="btn-ui btn-close">CONTINUER</button>
+            <a id="download-btn" href="" download class="btn-ui btn-download">ÉQUIPER (TÉLÉCHARGER)</a>
+            <button id="close-modal" class="btn-ui btn-close">CONTINUER LA QUÊTE</button>
         </div>
     </div>
 
-    <canvas id="canvas"></canvas>
-    
-    <div class="bottom-ui">
-        <a href="whatsapp://send?text=Je viens de débloquer un rang de fou sur ce site 3D ! 🔥 Teste ici : https://papaeuro.github.io/Mon-site/" class="btn-whatsapp">
-            DÉFIER TES AMIS 🚀
-        </a>
-    </div>
+    <a href="whatsapp://send?text=Rejoins ma guilde sur ce mini RPG ! 🔥 Teste ici : https://papaeuro.github.io/Mon-site/" class="btn-whatsapp">
+        INVITER DES ALLIÉS
+    </a>
 
     <script>
-        // --- CONFIGURATION PUB ---
         const DIRECT_LINK = "https://www.profitablecpmratenetwork.com/zr3rrt9c?key=41a9267d8ee0f4fe87afc967f3adad71";
         let hasClickedOnce = false;
-        let score = 0;
-        let powerMode = false;
+        let xp = 0;
 
-        // --- TES PALIERS EXACTS (Basés sur tes images GitHub) ---
+        // Tes paliers et tes rangs
         const milestones = [100, 500, 1000, 1300, 1500, 2000, 2600, 3000];
-        
-        // --- LES RANGS ASSOCIÉS ---
-        const ranks = [
-            "Recrue",           // 0 clics
-            "Bronze Antique",   // 100 clics
-            "Diamant Noir",     // 500 clics
-            "Cyber Élite",      // 1000 clics
-            "Maître Éclat",     // 1300 clics
-            "Mythe Phonk",      // 1500 clics
-            "Art Euro Suprême", // 2000 clics
-            "Titan Cosmique",   // 2600 clics
-            "Dieu Matrice"      // 3000 clics
-        ];
+        const ranks = ["Recrue", "Bronze Antique", "Diamant Noir", "Cyber Élite", "Maître Éclat", "Mythe Phonk", "Art Euro Suprême", "Titan Cosmique", "Dieu Matrice"];
 
-        const scoreEl = document.getElementById('score');
-        const rankEl = document.getElementById('rank');
-        const goalEl = document.getElementById('goal');
-        const body = document.getElementById('body');
+        const rankEl = document.getElementById('rank-text');
+        const xpBarEl = document.getElementById('xp-bar');
+        const xpTextEl = document.getElementById('xp-text');
+        const actionZone = document.getElementById('action-zone');
         const modal = document.getElementById('reward-modal');
         const rewardImg = document.getElementById('reward-img');
         const downloadBtn = document.getElementById('download-btn');
-        const placeholderVal = document.getElementById('placeholder-val');
 
-        // --- EFFETS 3D ---
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        let particles = [];
-        let ripples = [];
-
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        class Particle {
-            constructor(x, y) {
-                this.x = x; this.y = y;
-                this.originX = x; this.originY = y;
-                this.color = '#0ff'; this.size = 2;
-                this.vx = 0; this.vy = 0;
-                this.friction = 0.9; this.ease = 0.05;
-            }
-            draw() { ctx.fillStyle = this.color; ctx.fillRect(this.x, this.y, this.size, this.size); }
-            update(mx, my) {
-                let dx = mx - this.x; let dy = my - this.y;
-                let dist = Math.sqrt(dx*dx + dy*dy);
-                if (dist < 100) {
-                    let angle = Math.atan2(dy, dx);
-                    this.vx -= Math.cos(angle) * 12;
-                    this.vy -= Math.sin(angle) * 12;
-                }
-                this.vx *= this.friction; this.vy *= this.friction;
-                this.x += this.vx + (this.originX - this.x) * this.ease;
-                this.y += this.vy + (this.originY - this.y) * this.ease;
-            }
-        }
-
-        class Ripple {
-            constructor(x, y) { this.x = x; this.y = y; this.r = 0; this.opacity = 1; }
-            draw() {
-                ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-                ctx.strokeStyle = `rgba(0, 255, 255, ${this.opacity})`; ctx.lineWidth = 2; ctx.stroke();
-            }
-            update() { this.r += 6; this.opacity -= 0.04; }
-        }
-
-        function init() {
-            ctx.fillStyle = 'white'; ctx.font = 'bold 35px Arial'; ctx.textAlign = 'center';
-            ctx.fillText("Aʀᴛㅤᴇᴜʀᴏㅤ❕", canvas.width/2, canvas.height/2);
-            const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-            particles = [];
-            for (let y = 0; y < canvas.height; y += 5) {
-                for (let x = 0; x < canvas.width; x += 5) {
-                    if (data[(y * canvas.width + x) * 4 + 3] > 128) { particles.push(new Particle(x, y)); }
-                }
-            }
-        }
-
-        const handleTap = (x, y) => {
-            if (!hasClickedOnce) { window.open(DIRECT_LINK, '_blank'); hasClickedOnce = true; }
-
-            score++;
-            scoreEl.innerText = score;
-
-            // Vérifier les niveaux
-            milestones.forEach((m, index) => {
-                if (score === m) { showReward(m, ranks[index + 1]); }
-            });
-
-            // Mise à jour de l'objectif
-            let nextGoal = milestones.find(m => m > score);
-            if (nextGoal) {
-                goalEl.innerText = `OBJECTIF : ${nextGoal} 🔋`;
-            } else {
-                goalEl.innerText = `NIVEAU MAX ATTEINT 🏆`;
-                goalEl.style.color = "#f0f";
-            }
-
-            // Effets
-            const num = document.createElement('div');
-            num.className = 'floating-num'; num.innerText = '+1';
-            num.style.left = x + 'px'; num.style.top = y + 'px';
-            body.appendChild(num);
-            setTimeout(() => num.remove(), 800);
-
-            ripples.push(new Ripple(x, y));
-            canvas.classList.add('shake');
-            setTimeout(() => canvas.classList.remove('shake'), 200);
-            particles.forEach(p => p.update(x, y));
-        };
-
-        function showReward(val, rankName) {
-            modal.classList.remove('img-error');
+        function updateHUD() {
+            // Trouver le prochain palier
+            let nextGoal = milestones.find(m => m > xp);
+            let prevGoal = [...milestones].reverse().find(m => m <= xp) || 0;
             
-            // LA CORRECTION EST ICI : Ajout du "s" à rewards_
+            if (nextGoal) {
+                // Calcul du pourcentage pour la barre d'XP
+                let xpNeeded = nextGoal - prevGoal;
+                let xpGained = xp - prevGoal;
+                let percentage = (xpGained / xpNeeded) * 100;
+                
+                xpBarEl.style.width = percentage + "%";
+                xpTextEl.innerText = `XP: ${xp} / ${nextGoal}`;
+            } else {
+                xpBarEl.style.width = "100%";
+                xpTextEl.innerText = `XP: MAX (LVL MAX)`;
+                xpBarEl.style.background = "#f0f"; // Devient violet au max
+            }
+        }
+
+        function showLoot(val, rankName) {
+            // Utilise tes fichiers existants sur GitHub
             const fileName = `rewards_${val}.png`; 
             
             rewardImg.src = fileName;
-            placeholderVal.innerText = val;
+            rewardImg.style.display = 'block';
             
             downloadBtn.href = fileName;
-            downloadBtn.download = `PapaEuro_${rankName.replace(' ', '_')}.png`;
+            downloadBtn.download = `PapaEuro_Rang_${rankName.replace(' ', '_')}.png`;
             
-            rankEl.innerText = `RANG : ${rankName}`;
+            rankEl.innerText = rankName;
             modal.classList.add('active');
         }
 
-        function handleRewardError() {
-            modal.classList.add('img-error');
-            downloadBtn.style.display = 'none';
-        }
+        // Système de clic / attaque
+        actionZone.addEventListener('pointerdown', (e) => {
+            if (!hasClickedOnce) { window.open(DIRECT_LINK, '_blank'); hasClickedOnce = true; }
 
-        document.getElementById('close-modal').onclick = () => {
-            modal.classList.remove('active');
-            downloadBtn.style.display = 'inline-block';
-        };
+            xp++;
+            updateHUD();
 
-        window.addEventListener('touchstart', e => {
-            if (modal.classList.contains('active')) return;
-            handleTap(e.touches[0].clientX, e.touches[0].clientY);
+            // Vérifier si on monte de niveau
+            milestones.forEach((m, index) => {
+                if (xp === m) { showLoot(m, ranks[index + 1]); }
+            });
+
+            // Effet de dégâts visuels au clic
+            const dmg = document.createElement('div');
+            dmg.className = 'damage-text';
+            // Coups critiques aléatoires pour le style RPG
+            let isCrit = Math.random() > 0.8; 
+            dmg.innerText = isCrit ? 'CRIT +1!' : '+1 XP';
+            dmg.style.color = isCrit ? '#f0f' : '#ff3366';
+            
+            // Placer le texte là où le joueur a cliqué
+            dmg.style.left = (e.clientX - 20) + 'px';
+            dmg.style.top = (e.clientY - 20) + 'px';
+            
+            document.body.appendChild(dmg);
+            setTimeout(() => dmg.remove(), 600);
         });
 
-        function animate() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            particles.forEach(p => { p.update(-1000, -1000); p.draw(); });
-            ripples.forEach((r, i) => { r.update(); r.draw(); if (r.opacity <= 0) ripples.splice(i, 1); });
-            requestAnimationFrame(animate);
-        }
+        document.getElementById('close-modal').onclick = () => modal.classList.remove('active');
 
-        init(); animate(); window.onresize = init;
+        // Init HUD au démarrage
+        updateHUD();
     </script>
 
     <script src="https://pl29143512.profitablecpmratenetwork.com/c1/1d/2b/c11d2bf0222a5de5e208c200051fe32d.js"></script>
