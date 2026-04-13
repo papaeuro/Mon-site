@@ -3,12 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aʀᴛㅤᴇᴜʀᴏㅤ❕ - ULTIMATE CHALLENGE</title>
+    <title>Aʀᴛㅤᴇᴜʀᴏㅤ❕ - CLIC CHALLENGE</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; color: #fff; font-family: 'Arial Black', sans-serif; }
-        #ui-header { position: absolute; top: 20px; width: 100%; text-align: center; z-index: 100; pointer-events: none; }
-        #score { font-size: 60px; background: linear-gradient(to bottom, #fff, #0ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 15px #0ff); }
+        body { margin: 0; background: #000; overflow: hidden; color: #fff; font-family: 'Arial Black', sans-serif; perspective: 1000px; }
         
+        #ui-header { position: absolute; top: 20px; width: 100%; text-align: center; z-index: 100; pointer-events: none; transform: rotateX(20deg); }
+        #score { font-size: 60px; background: linear-gradient(to bottom, #fff, #0ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 15px #0ff); }
+        #rank { font-size: 14px; color: #f0f; text-transform: uppercase; letter-spacing: 3px; }
+        #goal { font-size: 10px; color: #0ff; margin-top: 5px; }
+
+        canvas { display: block; transition: transform 0.1s; }
+        .shake { animation: shake 0.2s; }
+        @keyframes shake { 0% { transform: translate(2px, 2px); } 50% { transform: translate(-2px, -2px); } 100% { transform: translate(0, 0); } }
+
+        .floating-num { position: absolute; color: #f0f; font-weight: bold; pointer-events: none; animation: floatUp 0.8s forwards; text-shadow: 0 0 10px #f0f; z-index: 1000; font-size: 20px; }
+        @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-120px); opacity: 0; } }
+
         /* MODAL DE RÉCOMPENSE */
         #reward-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -17,94 +27,222 @@
             z-index: 10000;
         }
         #reward-modal.active { display: flex; }
-        #reward-img { max-width: 85%; border-radius: 15px; box-shadow: 0 0 30px #0ff; margin-bottom: 20px; }
+        
+        #reward-container { position: relative; width: 85%; max-width: 400px; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; }
+        #reward-img { width: 100%; border-radius: 15px; box-shadow: 0 0 40px #0ff; border: 2px solid #0ff; }
+        
+        #reward-placeholder {
+            position: absolute; display: none; width: 150px; height: 150px;
+            border-radius: 50%; background: #000; border: 4px solid #f0f; box-shadow: 0 0 30px #f0f;
+            justify-content: center; align-items: center; flex-direction: column; font-family: 'Arial Black', sans-serif;
+        }
+        #reward-modal.img-error #reward-img { display: none; }
+        #reward-modal.img-error #reward-placeholder { display: flex; }
 
-        .btn-group { display: flex; gap: 10px; }
-        .btn-ui { padding: 12px 20px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; text-decoration: none; font-family: sans-serif; }
-        .btn-download { background: #0ff; color: #000; }
-        .btn-close { background: #f0f; color: #fff; }
+        .btn-group { display: flex; gap: 15px; }
+        .btn-ui { padding: 15px 25px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; text-decoration: none; font-size: 14px; transition: 0.2s; font-family: sans-serif; }
+        .btn-download { background: #00d2ff; color: #000; box-shadow: 0 0 15px #00d2ff; }
+        .btn-close { background: #ff00ff; color: #fff; box-shadow: 0 0 15px #ff00ff; }
+        .btn-ui:active { transform: scale(0.95); }
 
-        canvas { display: block; }
-        .floating-num { position: absolute; color: #f0f; font-weight: bold; pointer-events: none; animation: floatUp 0.8s forwards; z-index: 1000; }
-        @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-100px); opacity: 0; } }
+        .bottom-ui { position: absolute; bottom: 30px; width: 100%; text-align: center; z-index: 100; }
+        .btn-whatsapp { display: inline-block; background: #25D366; color: white; padding: 15px 30px; border-radius: 15px; text-decoration: none; font-weight: bold; box-shadow: 0 10px 0 #128C7E; pointer-events: auto; }
     </style>
 </head>
 <body id="body">
 
     <div id="ui-header">
-        <div id="level-title" style="font-size: 12px; color: #f0f;">RANG : DÉBUTANT</div>
+        <div id="rank">RANG : RECRUE</div>
         <div id="score">0</div>
-        <div id="next-goal" style="font-size: 10px; color: #0ff;">PROCHAIN : 100 🔋</div>
+        <div id="goal">OBJECTIF : 100 🔋</div>
     </div>
 
     <div id="reward-modal">
-        <div id="reward-title" style="font-size: 18px; margin-bottom: 15px; text-align: center;">NOUVEAU RANG DÉBLOQUÉ !</div>
-        <img id="reward-img" src="" alt="Récompense">
+        <div id="reward-name" style="font-size: 22px; color: #fff; margin-bottom: 15px; text-shadow: 0 0 10px #0ff;">TROPHÉE DÉBLOQUÉ !</div>
+        
+        <div id="reward-container">
+            <img id="reward-img" src="" alt="Récompense" onerror="handleRewardError()">
+            <div id="reward-placeholder">
+                <div style="font-size: 60px; color: #fff;">€</div>
+                <div style="font-size: 14px; color: #0ff;" id="placeholder-val">100</div>
+            </div>
+        </div>
+
         <div class="btn-group">
-            <a id="download-link" href="#" download class="btn-ui btn-download">TÉLÉCHARGER 📥</a>
-            <button id="close-reward" class="btn-ui btn-close">CONTINUER</button>
+            <a id="download-btn" href="" download class="btn-ui btn-download">TÉLÉCHARGER 📥</a>
+            <button id="close-modal" class="btn-ui btn-close">CONTINUER</button>
         </div>
     </div>
 
     <canvas id="canvas"></canvas>
+    
+    <div class="bottom-ui">
+        <a href="whatsapp://send?text=Je viens de débloquer un rang de fou sur ce site 3D ! 🔥 Teste ici : https://papaeuro.github.io/Mon-site/" class="btn-whatsapp">
+            DÉFIER TES AMIS 🚀
+        </a>
+    </div>
 
     <script>
+        // --- CONFIGURATION PUB ---
         const DIRECT_LINK = "https://www.profitablecpmratenetwork.com/zr3rrt9c?key=41a9267d8ee0f4fe87afc967f3adad71";
         let hasClickedOnce = false;
         let score = 0;
+        let powerMode = false;
+
+        // --- TES PALIERS EXACTS (Basés sur tes images GitHub) ---
+        const milestones = [100, 500, 1000, 1300, 1500, 2000, 2600, 3000];
         
-        const milestones = [100, 200, 300, 400, 500, 600, 800, 1000, 1500, 2000];
+        // --- LES RANGS ASSOCIÉS ---
+        const ranks = [
+            "Recrue",           // 0 clics
+            "Bronze Antique",   // 100 clics
+            "Diamant Noir",     // 500 clics
+            "Cyber Élite",      // 1000 clics
+            "Maître Éclat",     // 1300 clics
+            "Mythe Phonk",      // 1500 clics
+            "Art Euro Suprême", // 2000 clics
+            "Titan Cosmique",   // 2600 clics
+            "Dieu Matrice"      // 3000 clics
+        ];
+
+        const scoreEl = document.getElementById('score');
+        const rankEl = document.getElementById('rank');
+        const goalEl = document.getElementById('goal');
+        const body = document.getElementById('body');
+        const modal = document.getElementById('reward-modal');
+        const rewardImg = document.getElementById('reward-img');
+        const downloadBtn = document.getElementById('download-btn');
+        const placeholderVal = document.getElementById('placeholder-val');
+
+        // --- EFFETS 3D ---
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        const scoreElement = document.getElementById('score');
-        const rewardModal = document.getElementById('reward-modal');
-        const rewardImg = document.getElementById('reward-img');
-        const downloadLink = document.getElementById('download-link');
+        let particles = [];
+        let ripples = [];
 
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        // --- GESTION DES CLICS ---
-        const handleAction = (x, y) => {
+        class Particle {
+            constructor(x, y) {
+                this.x = x; this.y = y;
+                this.originX = x; this.originY = y;
+                this.color = '#0ff'; this.size = 2;
+                this.vx = 0; this.vy = 0;
+                this.friction = 0.9; this.ease = 0.05;
+            }
+            draw() { ctx.fillStyle = this.color; ctx.fillRect(this.x, this.y, this.size, this.size); }
+            update(mx, my) {
+                let dx = mx - this.x; let dy = my - this.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < 100) {
+                    let angle = Math.atan2(dy, dx);
+                    this.vx -= Math.cos(angle) * 12;
+                    this.vy -= Math.sin(angle) * 12;
+                }
+                this.vx *= this.friction; this.vy *= this.friction;
+                this.x += this.vx + (this.originX - this.x) * this.ease;
+                this.y += this.vy + (this.originY - this.y) * this.ease;
+            }
+        }
+
+        class Ripple {
+            constructor(x, y) { this.x = x; this.y = y; this.r = 0; this.opacity = 1; }
+            draw() {
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(0, 255, 255, ${this.opacity})`; ctx.lineWidth = 2; ctx.stroke();
+            }
+            update() { this.r += 6; this.opacity -= 0.04; }
+        }
+
+        function init() {
+            ctx.fillStyle = 'white'; ctx.font = 'bold 35px Arial'; ctx.textAlign = 'center';
+            ctx.fillText("Aʀᴛㅤᴇᴜʀᴏㅤ❕", canvas.width/2, canvas.height/2);
+            const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            particles = [];
+            for (let y = 0; y < canvas.height; y += 5) {
+                for (let x = 0; x < canvas.width; x += 5) {
+                    if (data[(y * canvas.width + x) * 4 + 3] > 128) { particles.push(new Particle(x, y)); }
+                }
+            }
+        }
+
+        const handleTap = (x, y) => {
             if (!hasClickedOnce) { window.open(DIRECT_LINK, '_blank'); hasClickedOnce = true; }
 
             score++;
-            scoreElement.innerText = score;
+            scoreEl.innerText = score;
 
-            // Vérifier si un palier est atteint
-            if (milestones.includes(score)) {
-                showReward(score);
+            // Vérifier les niveaux
+            milestones.forEach((m, index) => {
+                if (score === m) { showReward(m, ranks[index + 1]); }
+            });
+
+            // Mise à jour de l'objectif
+            let nextGoal = milestones.find(m => m > score);
+            if (nextGoal) {
+                goalEl.innerText = `OBJECTIF : ${nextGoal} 🔋`;
+            } else {
+                goalEl.innerText = `NIVEAU MAX ATTEINT 🏆`;
+                goalEl.style.color = "#f0f";
             }
 
-            // Effets visuels
+            // Effets
             const num = document.createElement('div');
             num.className = 'floating-num'; num.innerText = '+1';
             num.style.left = x + 'px'; num.style.top = y + 'px';
-            document.getElementById('body').appendChild(num);
+            body.appendChild(num);
             setTimeout(() => num.remove(), 800);
+
+            ripples.push(new Ripple(x, y));
+            canvas.classList.add('shake');
+            setTimeout(() => canvas.classList.remove('shake'), 200);
+            particles.forEach(p => p.update(x, y));
         };
 
-        function showReward(level) {
-            const imgPath = `reward_${level}.png`;
-            rewardImg.src = imgPath;
-            downloadLink.href = imgPath;
-            rewardModal.classList.add('active');
+        function showReward(val, rankName) {
+            modal.classList.remove('img-error');
+            
+            // LA CORRECTION EST ICI : Ajout du "s" à rewards_
+            const fileName = `rewards_${val}.png`; 
+            
+            rewardImg.src = fileName;
+            placeholderVal.innerText = val;
+            
+            downloadBtn.href = fileName;
+            downloadBtn.download = `PapaEuro_${rankName.replace(' ', '_')}.png`;
+            
+            rankEl.innerText = `RANG : ${rankName}`;
+            modal.classList.add('active');
         }
 
-        document.getElementById('close-reward').addEventListener('click', () => {
-            rewardModal.classList.remove('active');
-        });
+        function handleRewardError() {
+            modal.classList.add('img-error');
+            downloadBtn.style.display = 'none';
+        }
+
+        document.getElementById('close-modal').onclick = () => {
+            modal.classList.remove('active');
+            downloadBtn.style.display = 'inline-block';
+        };
 
         window.addEventListener('touchstart', e => {
-            if (rewardModal.classList.contains('active')) return;
-            handleAction(e.touches[0].clientX, e.touches[0].clientY);
+            if (modal.classList.contains('active')) return;
+            handleTap(e.touches[0].clientX, e.touches[0].clientY);
         });
 
-        // (Le reste du code d'animation des particules est identique à la V6...)
-        // [Inclus ici dans ton fichier final pour que ça fonctionne]
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(-1000, -1000); p.draw(); });
+            ripples.forEach((r, i) => { r.update(); r.draw(); if (r.opacity <= 0) ripples.splice(i, 1); });
+            requestAnimationFrame(animate);
+        }
+
+        init(); animate(); window.onresize = init;
     </script>
-    
+
     <script src="https://pl29143512.profitablecpmratenetwork.com/c1/1d/2b/c11d2bf0222a5de5e208c200051fe32d.js"></script>
     <script src="https://pl29143513.profitablecpmratenetwork.com/ef/cb/38/efcb38ab03bf39732d0afef6c1c17655.js"></script>
 </body>
-</html>
+    </html>
+    
