@@ -3,184 +3,189 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aʀᴛㅤᴇᴜʀᴏㅤ❕ - ASCENSION RPG</title>
+    <title>Aʀᴛㅤᴇᴜʀᴏㅤ❕ - NEON RUNNER RPG</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Teko:wght@500;700&display=swap');
-
-        body { 
-            margin: 0; background: #0a0a0c; color: #fff; 
-            font-family: 'Teko', sans-serif; overflow: hidden;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;
-        }
+        body { margin: 0; background: #050505; color: #fff; font-family: 'Teko', sans-serif; overflow: hidden; touch-action: manipulation; }
         
-        /* HUD - Interface RPG */
-        #rpg-hud {
-            position: absolute; top: 0; width: 100%; max-width: 500px;
-            padding: 20px; box-sizing: border-box; background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%);
-        }
+        /* HUD */
+        #hud { position: absolute; top: 0; width: 100%; padding: 15px; box-sizing: border-box; z-index: 100; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
+        .stats { display: flex; justify-content: space-between; font-size: 22px; color: #00d2ff; text-shadow: 0 0 10px #00d2ff; }
+        .xp-box { width: 100%; background: #222; height: 12px; border-radius: 6px; margin-top: 8px; border: 1px solid #444; overflow: hidden; }
+        #xp-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #00d2ff, #f0f); transition: 0.3s; }
 
-        .player-info { display: flex; justify-content: space-between; font-size: 24px; text-transform: uppercase; letter-spacing: 1px; }
-        .player-name { color: #00d2ff; text-shadow: 0 0 10px #00d2ff; }
-        .player-rank { color: #f0f; text-shadow: 0 0 10px #f0f; }
+        canvas { display: block; background: #000; }
 
-        /* Barre d'XP */
-        .xp-container { width: 100%; background: #222; height: 25px; border-radius: 5px; margin-top: 15px; border: 2px solid #333; position: relative; overflow: hidden; box-shadow: 0 0 10px rgba(0, 210, 255, 0.2); }
-        .xp-bar { height: 100%; background: linear-gradient(90deg, #00d2ff, #f0f); width: 0%; transition: width 0.1s linear; }
-        .xp-text { position: absolute; top: 0; width: 100%; text-align: center; line-height: 25px; font-size: 20px; font-weight: bold; text-shadow: 1px 1px 2px #000; }
-
-        /* Zone d'action centrale */
-        #action-zone {
-            width: 300px; height: 300px; border-radius: 50%;
-            background: radial-gradient(circle, #1a1a24 0%, #0a0a0c 70%);
-            border: 4px dashed #00d2ff; display: flex; align-items: center; justify-content: center;
-            font-size: 40px; cursor: pointer; user-select: none; transition: 0.1s;
-            box-shadow: 0 0 50px rgba(0, 210, 255, 0.1) inset, 0 0 30px rgba(0, 210, 255, 0.2);
-            animation: pulse 4s infinite alternate;
-        }
-        #action-zone:active { transform: scale(0.95); border-color: #f0f; box-shadow: 0 0 50px rgba(255, 0, 255, 0.3) inset; }
-        @keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(1.05); } }
-
-        /* Dégâts flottants (Les clics) */
-        .damage-text {
-            position: absolute; color: #ff3366; font-weight: bold; font-size: 35px;
-            pointer-events: none; animation: dmgFloat 0.6s forwards; text-shadow: 0 0 5px #ff0000; z-index: 100;
-        }
-        @keyframes dmgFloat { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-80px) scale(1.5); opacity: 0; } }
-
-        /* MODAL DE RÉCOMPENSE (Loot) */
-        #reward-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.95); display: none;
-            justify-content: center; align-items: center; flex-direction: column; z-index: 10000;
-        }
+        /* MODAL RECOMPENSE */
+        #reward-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
         #reward-modal.active { display: flex; }
-        #reward-img { width: 85%; max-width: 400px; border-radius: 10px; border: 3px solid #00d2ff; box-shadow: 0 0 30px #00d2ff; margin-bottom: 20px; }
+        #reward-img { width: 80%; max-width: 350px; border: 3px solid #f0f; border-radius: 15px; box-shadow: 0 0 30px #f0f; margin-bottom: 20px; }
         
-        .btn-group { display: flex; gap: 15px; }
-        .btn-ui { padding: 10px 30px; border: none; font-size: 22px; font-family: 'Teko', sans-serif; text-transform: uppercase; cursor: pointer; text-decoration: none; border-radius: 5px; }
-        .btn-download { background: #00d2ff; color: #000; box-shadow: 0 0 15px #00d2ff; }
-        .btn-close { background: #f0f; color: #fff; box-shadow: 0 0 15px #f0f; }
+        .btn-ui { padding: 12px 25px; border: none; font-family: 'Teko'; font-size: 20px; border-radius: 5px; text-decoration: none; cursor: pointer; }
+        .btn-get { background: #00d2ff; color: #000; margin-right: 10px; }
+        .btn-next { background: #f0f; color: #fff; }
 
-        .btn-whatsapp { position: absolute; bottom: 30px; background: #25D366; color: white; padding: 10px 30px; font-size: 22px; text-decoration: none; border-radius: 5px; text-transform: uppercase; box-shadow: 0 5px 0 #128C7E; }
+        #msg { position: absolute; width: 100%; text-align: center; top: 50%; font-size: 30px; color: #f0f; pointer-events: none; opacity: 0; transition: 0.5s; }
     </style>
 </head>
-<body id="body">
+<body>
 
-    <div id="rpg-hud">
-        <div class="player-info">
-            <div class="player-name">Aʀᴛㅤᴇᴜʀᴏㅤ❕</div>
-            <div class="player-rank" id="rank-text">Recrue</div>
+    <div id="hud">
+        <div class="stats">
+            <span id="rank-name">RANG : RECRUE</span>
+            <span id="score-text">XP : 0</span>
         </div>
-        <div class="xp-container">
-            <div class="xp-bar" id="xp-bar"></div>
-            <div class="xp-text" id="xp-text">XP: 0 / 100</div>
-        </div>
+        <div class="xp-box"><div id="xp-bar"></div></div>
     </div>
 
-    <div id="action-zone">
-        FARMER XP
-    </div>
+    <div id="msg">SAUTE !</div>
+
+    <canvas id="gameCanvas"></canvas>
 
     <div id="reward-modal">
-        <div style="font-size: 40px; color: #fff; margin-bottom: 10px; text-shadow: 0 0 15px #0ff;">NOUVEAU RANG ATTEINT !</div>
-        <img id="reward-img" src="" alt="Loot" onerror="this.style.display='none'">
-        <div class="btn-group">
-            <a id="download-btn" href="" download class="btn-ui btn-download">ÉQUIPER (TÉLÉCHARGER)</a>
-            <button id="close-modal" class="btn-ui btn-close">CONTINUER LA QUÊTE</button>
+        <h1 id="lvl-up-text" style="color:#0ff; text-shadow: 0 0 10px #0ff;">LEVEL UP !</h1>
+        <img id="reward-img" src="" alt="Reward">
+        <div style="display:flex;">
+            <a id="dl-link" href="" download class="btn-ui btn-get">RÉCUPÉRER</a>
+            <button onclick="closeLoot()" class="btn-ui btn-next">CONTINUER</button>
         </div>
     </div>
 
-    <a href="whatsapp://send?text=Rejoins ma guilde sur ce mini RPG ! 🔥 Teste ici : https://papaeuro.github.io/Mon-site/" class="btn-whatsapp">
-        INVITER DES ALLIÉS
-    </a>
-
     <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Configuration
         const DIRECT_LINK = "https://www.profitablecpmratenetwork.com/zr3rrt9c?key=41a9267d8ee0f4fe87afc967f3adad71";
         let hasClickedOnce = false;
-        let xp = 0;
+        let score = 0;
+        let milestones = [100, 500, 1000, 1300, 1500, 2000, 2600, 3000];
+        let ranks = ["Recrue", "Bronze Antique", "Diamant Noir", "Cyber Élite", "Maître Éclat", "Mythe Phonk", "Art Euro Suprême", "Titan Cosmique", "Dieu Matrice"];
 
-        // Tes paliers et tes rangs
-        const milestones = [100, 500, 1000, 1300, 1500, 2000, 2600, 3000];
-        const ranks = ["Recrue", "Bronze Antique", "Diamant Noir", "Cyber Élite", "Maître Éclat", "Mythe Phonk", "Art Euro Suprême", "Titan Cosmique", "Dieu Matrice"];
+        // Game State
+        let gameActive = true;
+        let player = { x: 50, y: canvas.height - 100, w: 40, h: 40, dy: 0, jumpForce: 15, gravity: 0.8, grounded: false };
+        let obstacles = [];
+        let particles = [];
+        let spawnTimer = 0;
 
-        const rankEl = document.getElementById('rank-text');
-        const xpBarEl = document.getElementById('xp-bar');
-        const xpTextEl = document.getElementById('xp-text');
-        const actionZone = document.getElementById('action-zone');
-        const modal = document.getElementById('reward-modal');
-        const rewardImg = document.getElementById('reward-img');
-        const downloadBtn = document.getElementById('download-btn');
+        function spawnObstacle() {
+            let size = 40 + Math.random() * 40;
+            obstacles.push({ x: canvas.width, y: canvas.height - size - 50, w: 30, h: size, color: '#ff3366' });
+        }
 
-        function updateHUD() {
-            // Trouver le prochain palier
-            let nextGoal = milestones.find(m => m > xp);
-            let prevGoal = [...milestones].reverse().find(m => m <= xp) || 0;
-            
-            if (nextGoal) {
-                // Calcul du pourcentage pour la barre d'XP
-                let xpNeeded = nextGoal - prevGoal;
-                let xpGained = xp - prevGoal;
-                let percentage = (xpGained / xpNeeded) * 100;
-                
-                xpBarEl.style.width = percentage + "%";
-                xpTextEl.innerText = `XP: ${xp} / ${nextGoal}`;
-            } else {
-                xpBarEl.style.width = "100%";
-                xpTextEl.innerText = `XP: MAX (LVL MAX)`;
-                xpBarEl.style.background = "#f0f"; // Devient violet au max
+        function update() {
+            if (!gameActive) return;
+
+            // Gravité
+            player.dy += player.gravity;
+            player.y += player.dy;
+
+            if (player.y + player.h > canvas.height - 50) {
+                player.y = canvas.height - 50 - player.h;
+                player.dy = 0;
+                player.grounded = true;
             }
-        }
 
-        function showLoot(val, rankName) {
-            // Utilise tes fichiers existants sur GitHub
-            const fileName = `rewards_${val}.png`; 
-            
-            rewardImg.src = fileName;
-            rewardImg.style.display = 'block';
-            
-            downloadBtn.href = fileName;
-            downloadBtn.download = `PapaEuro_Rang_${rankName.replace(' ', '_')}.png`;
-            
-            rankEl.innerText = rankName;
-            modal.classList.add('active');
-        }
+            // Obstacles
+            spawnTimer++;
+            if (spawnTimer > 80) { spawnObstacle(); spawnTimer = 0; }
 
-        // Système de clic / attaque
-        actionZone.addEventListener('pointerdown', (e) => {
-            if (!hasClickedOnce) { window.open(DIRECT_LINK, '_blank'); hasClickedOnce = true; }
+            obstacles.forEach((obs, i) => {
+                obs.x -= 6; // Vitesse de la course
 
-            xp++;
-            updateHUD();
+                // Collision
+                if (player.x < obs.x + obs.w && player.x + player.w > obs.x &&
+                    player.y < obs.y + obs.h && player.y + player.h > obs.y) {
+                    // Reset joueur mais garde le score
+                    obstacles = [];
+                    player.dy = 0;
+                }
 
-            // Vérifier si on monte de niveau
-            milestones.forEach((m, index) => {
-                if (xp === m) { showLoot(m, ranks[index + 1]); }
+                // Point gagné quand on dépasse
+                if (obs.x + obs.w < player.x && !obs.passed) {
+                    obs.passed = true;
+                    addXP();
+                }
+
+                if (obs.x + obs.w < 0) obstacles.splice(i, 1);
             });
+        }
 
-            // Effet de dégâts visuels au clic
-            const dmg = document.createElement('div');
-            dmg.className = 'damage-text';
-            // Coups critiques aléatoires pour le style RPG
-            let isCrit = Math.random() > 0.8; 
-            dmg.innerText = isCrit ? 'CRIT +1!' : '+1 XP';
-            dmg.style.color = isCrit ? '#f0f' : '#ff3366';
+        function addXP() {
+            score += 10; // 10 XP par obstacle
+            document.getElementById('score-text').innerText = "XP : " + score;
             
-            // Placer le texte là où le joueur a cliqué
-            dmg.style.left = (e.clientX - 20) + 'px';
-            dmg.style.top = (e.clientY - 20) + 'px';
-            
-            document.body.appendChild(dmg);
-            setTimeout(() => dmg.remove(), 600);
+            // Barre XP
+            let next = milestones.find(m => m > score) || 3000;
+            let prev = [...milestones].reverse().find(m => m <= score) || 0;
+            let percent = ((score - prev) / (next - prev)) * 100;
+            document.getElementById('xp-bar').style.width = percent + "%";
+
+            // Level Up Check
+            milestones.forEach((m, idx) => {
+                if (score === m) { openLoot(m, ranks[idx+1]); }
+            });
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Sol néon
+            ctx.strokeStyle = '#00d2ff';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height - 50);
+            ctx.lineTo(canvas.width, canvas.height - 50);
+            ctx.stroke();
+
+            // Joueur (Cube Néon)
+            ctx.fillStyle = '#f0f';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#f0f';
+            ctx.fillRect(player.x, player.y, player.w, player.h);
+
+            // Obstacles
+            ctx.fillStyle = '#ff3366';
+            ctx.shadowColor = '#ff3366';
+            obstacles.forEach(obs => {
+                ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+            });
+            ctx.shadowBlur = 0;
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function openLoot(val, rankName) {
+            gameActive = false;
+            document.getElementById('rank-name').innerText = "RANG : " + rankName;
+            const imgPath = `rewards_${val}.png`; // Utilise tes fichiers rewards_XXX.png
+            document.getElementById('reward-img').src = imgPath;
+            document.getElementById('dl-link').href = imgPath;
+            document.getElementById('reward-modal').classList.add('active');
+        }
+
+        function closeLoot() {
+            document.getElementById('reward-modal').classList.remove('active');
+            gameActive = true;
+        }
+
+        window.addEventListener('touchstart', () => {
+            if (!hasClickedOnce) { window.open(DIRECT_LINK, '_blank'); hasClickedOnce = true; }
+            if (player.grounded) {
+                player.dy = -player.jumpForce;
+                player.grounded = false;
+            }
         });
 
-        document.getElementById('close-modal').onclick = () => modal.classList.remove('active');
-
-        // Init HUD au démarrage
-        updateHUD();
+        gameLoop();
     </script>
-
-    <script src="https://pl29143512.profitablecpmratenetwork.com/c1/1d/2b/c11d2bf0222a5de5e208c200051fe32d.js"></script>
-    <script src="https://pl29143513.profitablecpmratenetwork.com/ef/cb/38/efcb38ab03bf39732d0afef6c1c17655.js"></script>
 </body>
     </html>
     
