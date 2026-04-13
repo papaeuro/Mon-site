@@ -3,29 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aʀᴛㅤᴇᴜʀᴏㅤ❕ - NEON RUNNER RPG</title>
+    <title>Aʀᴛㅤᴇᴜʀᴏㅤ❕ - KINETIC RUNNER RPG</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Teko:wght@500;700&display=swap');
-        body { margin: 0; background: #050505; color: #fff; font-family: 'Teko', sans-serif; overflow: hidden; touch-action: manipulation; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Teko', sans-serif; overflow: hidden; touch-action: manipulation; }
         
-        /* HUD */
         #hud { position: absolute; top: 0; width: 100%; padding: 15px; box-sizing: border-box; z-index: 100; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
         .stats { display: flex; justify-content: space-between; font-size: 22px; color: #00d2ff; text-shadow: 0 0 10px #00d2ff; }
         .xp-box { width: 100%; background: #222; height: 12px; border-radius: 6px; margin-top: 8px; border: 1px solid #444; overflow: hidden; }
         #xp-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #00d2ff, #f0f); transition: 0.3s; }
 
-        canvas { display: block; background: #000; }
+        canvas { display: block; }
 
-        /* MODAL RECOMPENSE */
         #reward-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
         #reward-modal.active { display: flex; }
         #reward-img { width: 80%; max-width: 350px; border: 3px solid #f0f; border-radius: 15px; box-shadow: 0 0 30px #f0f; margin-bottom: 20px; }
         
-        .btn-ui { padding: 12px 25px; border: none; font-family: 'Teko'; font-size: 20px; border-radius: 5px; text-decoration: none; cursor: pointer; }
+        .btn-ui { padding: 12px 25px; border: none; font-family: 'Teko'; font-size: 20px; border-radius: 5px; text-decoration: none; cursor: pointer; text-transform: uppercase; }
         .btn-get { background: #00d2ff; color: #000; margin-right: 10px; }
         .btn-next { background: #f0f; color: #fff; }
-
-        #msg { position: absolute; width: 100%; text-align: center; top: 50%; font-size: 30px; color: #f0f; pointer-events: none; opacity: 0; transition: 0.5s; }
     </style>
 </head>
 <body>
@@ -38,16 +34,14 @@
         <div class="xp-box"><div id="xp-bar"></div></div>
     </div>
 
-    <div id="msg">SAUTE !</div>
-
     <canvas id="gameCanvas"></canvas>
 
     <div id="reward-modal">
-        <h1 id="lvl-up-text" style="color:#0ff; text-shadow: 0 0 10px #0ff;">LEVEL UP !</h1>
+        <h1 style="color:#f0f; text-shadow: 0 0 10px #f0f;">NOUVELLE CARTE DÉBLOQUÉE !</h1>
         <img id="reward-img" src="" alt="Reward">
         <div style="display:flex;">
-            <a id="dl-link" href="" download class="btn-ui btn-get">RÉCUPÉRER</a>
-            <button onclick="closeLoot()" class="btn-ui btn-next">CONTINUER</button>
+            <a id="dl-link" href="" download class="btn-ui btn-get">TÉLÉCHARGER (TROPHEE)</a>
+            <button onclick="closeLoot()" class="btn-ui btn-next">CONTINUER LA QUÊTE</button>
         </div>
     </div>
 
@@ -57,31 +51,81 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        // Configuration
+        // --- CONFIGURATION ADSTERRA ---
         const DIRECT_LINK = "https://www.profitablecpmratenetwork.com/zr3rrt9c?key=41a9267d8ee0f4fe87afc967f3adad71";
+        const LOOT_LINK = "COLLE_ICI_UN_DEUXIEME_LIEN_DIRECT_LINK"; // En option pour le loot
         let hasClickedOnce = false;
+        
+        // --- GAME ASSETS & PALIERS ---
         let score = 0;
         let milestones = [100, 500, 1000, 1300, 1500, 2000, 2600, 3000];
         let ranks = ["Recrue", "Bronze Antique", "Diamant Noir", "Cyber Élite", "Maître Éclat", "Mythe Phonk", "Art Euro Suprême", "Titan Cosmique", "Dieu Matrice"];
 
-        // Game State
         let gameActive = true;
-        let player = { x: 50, y: canvas.height - 100, w: 40, h: 40, dy: 0, jumpForce: 15, gravity: 0.8, grounded: false };
+        
+        // --- CHARGEMENT DE L'AVATAR (Footballeur technique) ---
+        const playerImg = new Image();
+        playerImg.src = 'https://i.ibb.co/L5hY5Fk/Brazilian-Player-Articulations.png'; // Ton image générée
+        
+        let player = { x: 50, y: canvas.height - 180, w: 100, h: 140, dy: 0, jumpForce: 18, gravity: 0.8, grounded: false, animTime: 0 };
         let obstacles = [];
-        let particles = [];
         let spawnTimer = 0;
 
+        // --- DESSIN DU SQUELETTE D'ARTICULATION ---
+        function drawSkeleton(px, py, width, height, time) {
+            ctx.strokeStyle = 'rgba(0, 210, 255, 0.7)'; // Cyan lumineux
+            ctx.lineWidth = 2;
+            ctx.fillStyle = '#fff'; // Point blanc
+            
+            // Calculer les mouvements des articulations basés sur le temps (animation)
+            let jointTime = time * 0.1;
+            
+            // 1. Définir les points d'articulation (Genou, Hanche, Épaule, Coude)
+            // C'est une simulation simplifiée d'un mouvement de course
+            let kneeOffset = Math.sin(jointTime) * 15;
+            let ankleOffset = Math.sin(jointTime + Math.PI/2) * 20;
+            let elbowOffset = Math.cos(jointTime) * 10;
+            
+            let points = [
+                { id: 'hip',   x: px + width * 0.5, y: py + height * 0.4 },
+                { id: 'knee',  x: px + width * 0.5 + kneeOffset, y: py + height * 0.7 },
+                { id: 'ankle', x: px + width * 0.5 + ankleOffset, y: py + height * 0.95 },
+                { id: 'shldr', x: px + width * 0.5, y: py + height * 0.15 },
+                { id: 'elbow', x: px + width * 0.2 + elbowOffset, y: py + height * 0.25 }
+            ];
+            
+            // 2. Dessiner les os (lignes)
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y); // Hip
+            ctx.lineTo(points[1].x, points[1].y); // to Knee
+            ctx.lineTo(points[2].x, points[2].y); // to Ankle
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(points[3].x, points[3].y); // Shoulder
+            ctx.lineTo(points[4].x, points[4].y); // to Elbow
+            ctx.stroke();
+            
+            // 3. Dessiner les articulations (points)
+            points.forEach(pt => {
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            });
+        }
+
         function spawnObstacle() {
-            let size = 40 + Math.random() * 40;
-            obstacles.push({ x: canvas.width, y: canvas.height - size - 50, w: 30, h: size, color: '#ff3366' });
+            obstacles.push({ x: canvas.width, y: canvas.height - 110, w: 40, h: 60, color: '#ff0055' });
         }
 
         function update() {
             if (!gameActive) return;
 
-            // Gravité
+            // Gravité joueur
             player.dy += player.gravity;
             player.y += player.dy;
+            player.animTime++; // Incrémenter l'animation pour les articulations
 
             if (player.y + player.h > canvas.height - 50) {
                 player.y = canvas.height - 50 - player.h;
@@ -89,25 +133,22 @@
                 player.grounded = true;
             }
 
-            // Obstacles
+            // Gestion des Obstacles
             spawnTimer++;
-            if (spawnTimer > 80) { spawnObstacle(); spawnTimer = 0; }
+            if (spawnTimer > (60 + Math.random() * 40)) { spawnObstacle(); spawnTimer = 0; }
 
             obstacles.forEach((obs, i) => {
-                obs.x -= 6; // Vitesse de la course
+                obs.x -= 8; // Vitesse
 
-                // Collision
+                // Collision simplifiée
                 if (player.x < obs.x + obs.w && player.x + player.w > obs.x &&
-                    player.y < obs.y + obs.h && player.y + player.h > obs.y) {
-                    // Reset joueur mais garde le score
-                    obstacles = [];
-                    player.dy = 0;
+                    player.y + player.h > obs.y) {
+                    // Collision : Reset mais garde le score
+                    obstacles = []; player.dy = 0; player.grounded = true;
                 }
 
-                // Point gagné quand on dépasse
                 if (obs.x + obs.w < player.x && !obs.passed) {
-                    obs.passed = true;
-                    addXP();
+                    obs.passed = true; addXP();
                 }
 
                 if (obs.x + obs.w < 0) obstacles.splice(i, 1);
@@ -115,76 +156,70 @@
         }
 
         function addXP() {
-            score += 10; // 10 XP par obstacle
+            score += 10;
             document.getElementById('score-text').innerText = "XP : " + score;
-            
-            // Barre XP
             let next = milestones.find(m => m > score) || 3000;
             let prev = [...milestones].reverse().find(m => m <= score) || 0;
             let percent = ((score - prev) / (next - prev)) * 100;
             document.getElementById('xp-bar').style.width = percent + "%";
-
-            // Level Up Check
-            milestones.forEach((m, idx) => {
-                if (score === m) { openLoot(m, ranks[idx+1]); }
-            });
+            milestones.forEach((m, idx) => { if (score === m) { openLoot(m, ranks[idx+1]); } });
         }
 
         function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#0a0a0c'; // Fond d'écran
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Sol néon
-            ctx.strokeStyle = '#00d2ff';
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.moveTo(0, canvas.height - 50);
-            ctx.lineTo(canvas.width, canvas.height - 50);
-            ctx.stroke();
+            // Sol technique néon
+            ctx.strokeStyle = '#f0f'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(0, canvas.height - 50); ctx.lineTo(canvas.width, canvas.height - 50); ctx.stroke();
 
-            // Joueur (Cube Néon)
-            ctx.fillStyle = '#f0f';
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = '#f0f';
-            ctx.fillRect(player.x, player.y, player.w, player.h);
+            // Dessiner l'Avatar (si chargé)
+            if (playerImg.complete) {
+                ctx.drawImage(playerImg, player.x, player.y, player.w, player.h);
+            }
 
-            // Obstacles
-            ctx.fillStyle = '#ff3366';
-            ctx.shadowColor = '#ff3366';
+            // --- ESSENTIEL : Dessiner le squelette technique ---
+            drawSkeleton(player.x, player.y, player.w, player.h, player.animTime);
+
+            // Obstacles копии (Barrières jaunes et noires)
             obstacles.forEach(obs => {
+                // Fond de l'obstacle
+                ctx.fillStyle = '#333';
                 ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+                // Bandage technique jaune et noir
+                ctx.strokeStyle = '#ffcc00'; ctx.lineWidth = 6;
+                ctx.beginPath(); ctx.moveTo(obs.x + 5, obs.y + 10); ctx.lineTo(obs.x + obs.w - 5, obs.y + obs.h - 10); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(obs.x + 15, obs.y + 10); ctx.lineTo(obs.x + obs.w - 15, obs.y + obs.h - 10); ctx.stroke();
             });
-            ctx.shadowBlur = 0;
         }
 
-        function gameLoop() {
-            update();
-            draw();
-            requestAnimationFrame(gameLoop);
-        }
+        function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
 
         function openLoot(val, rankName) {
             gameActive = false;
+            
+            // --- MONETISATION 2 : Loot Link ---
+            //window.open(LOOT_LINK, '_blank'); 
+
             document.getElementById('rank-name').innerText = "RANG : " + rankName;
-            const imgPath = `rewards_${val}.png`; // Utilise tes fichiers rewards_XXX.png
+            const imgPath = `rewards_${val}.png`; // Utilise tes fichiers existants sur GitHub
             document.getElementById('reward-img').src = imgPath;
             document.getElementById('dl-link').href = imgPath;
             document.getElementById('reward-modal').classList.add('active');
         }
 
-        function closeLoot() {
-            document.getElementById('reward-modal').classList.remove('active');
-            gameActive = true;
-        }
+        function closeLoot() { document.getElementById('reward-modal').classList.remove('active'); gameActive = true; }
 
-        window.addEventListener('touchstart', () => {
+        window.addEventListener('touchstart', e => {
             if (!hasClickedOnce) { window.open(DIRECT_LINK, '_blank'); hasClickedOnce = true; }
-            if (player.grounded) {
-                player.dy = -player.jumpForce;
-                player.grounded = false;
-            }
+            if (modal.classList.contains('active')) return;
+            if (player.grounded) { player.dy = -player.jumpForce; player.grounded = false; }
         });
 
-        gameLoop();
+        // Charger l'image avant de lancer le jeu
+        playerImg.onload = () => { gameLoop(); };
+        window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; init(); };
+
     </script>
 </body>
     </html>
