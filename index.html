@@ -2,77 +2,92 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aʀᴛㅤᴇᴜʀᴏㅤ❕ - ENERGY CHALLENGE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Aʀᴛㅤᴇᴜʀᴏㅤ❕ - 3D VFX</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; color: #0ff; font-family: 'Courier New', monospace; }
-        canvas { display: block; filter: drop-shadow(0 0 8px #0ff); }
+        body { margin: 0; background: #000; overflow: hidden; color: #fff; font-family: 'Arial Black', sans-serif; perspective: 1000px; }
         
-        .ui-overlay {
+        /* HEADER 3D */
+        #ui-header {
             position: absolute;
             top: 20px;
             width: 100%;
             text-align: center;
+            z-index: 100;
             pointer-events: none;
+            transform: rotateX(20deg); /* Effet de perspective */
         }
 
-        #score-container {
-            font-size: 24px;
-            font-weight: bold;
-            text-shadow: 0 0 10px #f0f;
-            color: #fff;
+        #score { 
+            font-size: 60px; 
+            background: linear-gradient(to bottom, #fff, #0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 15px #0ff);
         }
 
-        .bottom-ui {
+        /* EFFET DE SECOUSSE SUR LE CANVAS */
+        canvas { display: block; transition: transform 0.1s; }
+        .shake { animation: shake 0.2s; }
+        @keyframes shake {
+            0% { transform: translate(2px, 2px); }
+            50% { transform: translate(-2px, -2px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        /* CHIFFRES FLOTTANTS (+1) */
+        .floating-num {
             position: absolute;
-            bottom: 30px;
-            width: 100%;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            align-items: center;
+            color: #f0f;
+            font-weight: bold;
+            pointer-events: none;
+            animation: floatUp 0.8s ease-out forwards;
+            text-shadow: 0 0 10px #f0f;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-100px); opacity: 0; }
         }
 
+        .bottom-ui { position: absolute; bottom: 30px; width: 100%; text-align: center; z-index: 100; }
         .btn-whatsapp {
+            display: inline-block;
             background: #25D366;
             color: white;
-            padding: 10px 20px;
-            border-radius: 50px;
+            padding: 15px 30px;
+            border-radius: 15px;
             text-decoration: none;
-            font-size: 14px;
             font-weight: bold;
-            box-shadow: 0 0 15px rgba(37, 211, 102, 0.5);
-            pointer-events: auto;
+            box-shadow: 0 10px 0 #128C7E;
+            transition: 0.1s;
         }
-
-        .level-text {
-            font-size: 10px;
-            color: #f0f;
-            letter-spacing: 2px;
-        }
+        .btn-whatsapp:active { transform: translateY(5px); box-shadow: 0 5px 0 #128C7E; }
     </style>
 </head>
-<body>
-    <div class="ui-overlay">
-        <div id="score-container">ÉNERGIE : <span id="score">0</span></div>
-        <div class="level-text" id="status">MODE : NORMAL</div>
+<body id="body">
+
+    <div id="ui-header">
+        <div style="font-size: 12px; letter-spacing: 5px; color: #f0f;">NIVEAU D'ÉNERGIE</div>
+        <div id="score">0</div>
     </div>
 
     <canvas id="canvas"></canvas>
     
     <div class="bottom-ui">
-        <a href="whatsapp://send?text=J'ai atteint le niveau Ultra sur le site de Papa Euro ! Teste ici : https://papaeuro.github.io/Mon-site/" class="btn-whatsapp">
-            DÉFIER UN AMI 🚀
+        <a href="whatsapp://send?text=Regarde mon nouveau site 3D ! 🔥 https://papaeuro.github.io/Mon-site/" class="btn-whatsapp">
+            INVITER DES RIVAUX 🚀
         </a>
     </div>
 
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const body = document.getElementById('body');
+        
         let particles = [];
+        let ripples = [];
         let score = 0;
-        let powerMode = false;
 
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -84,7 +99,7 @@
                 this.color = '#0ff';
                 this.size = 2;
                 this.vx = 0; this.vy = 0;
-                this.friction = 0.9; this.ease = 0.05;
+                this.friction = 0.9; this.ease = 0.08;
             }
             draw() {
                 ctx.fillStyle = this.color;
@@ -94,15 +109,34 @@
                 let dx = mx - this.x;
                 let dy = my - this.y;
                 let dist = Math.sqrt(dx*dx + dy*dy);
-                if (dist < (powerMode ? 150 : 80)) {
+                if (dist < 120) {
                     let angle = Math.atan2(dy, dx);
-                    let force = powerMode ? 15 : 8;
-                    this.vx -= Math.cos(angle) * force;
-                    this.vy -= Math.sin(angle) * force;
+                    this.vx -= Math.cos(angle) * 15;
+                    this.vy -= Math.sin(angle) * 15;
                 }
                 this.vx *= this.friction; this.vy *= this.friction;
                 this.x += this.vx + (this.originX - this.x) * this.ease;
                 this.y += this.vy + (this.originY - this.y) * this.ease;
+            }
+        }
+
+        // Système de Ripples (Ondes de choc)
+        class Ripple {
+            constructor(x, y) {
+                this.x = x; this.y = y;
+                this.r = 0;
+                this.opacity = 1;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(0, 255, 255, ${this.opacity})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+            update() {
+                this.r += 5;
+                this.opacity -= 0.03;
             }
         }
 
@@ -122,36 +156,51 @@
             }
         }
 
-        window.addEventListener('touchstart', e => {
-            let mx = e.touches[0].clientX;
-            let my = e.touches[0].clientY;
-            score += 1;
-            document.getElementById('score').innerText = score;
+        const handleAction = (x, y) => {
+            score++;
+            scoreElement.innerText = score;
             
-            // Évolution du mode
-            if (score > 100) {
-                powerMode = true;
-                document.getElementById('status').innerText = "MODE : ULTRA NEON";
-                particles.forEach(p => p.color = '#f0f');
-            }
-            if (score > 300) {
-                document.getElementById('status').innerText = "MODE : DIEU DU CODING ⚡";
-                particles.forEach(p => p.color = '#fff');
-            }
+            // 1. Ajouter un chiffre flottant
+            const num = document.createElement('div');
+            num.className = 'floating-num';
+            num.innerText = '+1';
+            num.style.left = x + 'px';
+            num.style.top = y + 'px';
+            body.appendChild(num);
+            setTimeout(() => num.remove(), 800);
 
-            particles.forEach(p => p.update(mx, my));
+            // 2. Ajouter une onde de choc
+            ripples.push(new Ripple(x, y));
+
+            // 3. Secouer l'écran
+            canvas.classList.add('shake');
+            setTimeout(() => canvas.classList.remove('shake'), 200);
+
+            // 4. Explosion de particules
+            particles.forEach(p => p.update(x, y));
+        };
+
+        window.addEventListener('touchstart', e => {
+            handleAction(e.touches[0].clientX, e.touches[0].clientY);
         });
 
         function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            particles.forEach(p => { 
-                // Animation flottante automatique pour retenir le regard
-                p.update(-1000, -1000); 
-                p.draw(); 
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; // Effet de traînée
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            particles.forEach(p => { p.update(-1000, -1000); p.draw(); });
+            
+            ripples.forEach((r, i) => {
+                r.update();
+                r.draw();
+                if (r.opacity <= 0) ripples.splice(i, 1);
             });
+
             requestAnimationFrame(animate);
         }
+
         init(); animate();
+        window.onresize = init;
     </script>
 
     <script src="https://pl29143512.profitablecpmratenetwork.com/c1/1d/2b/c11d2bf0222a5de5e208c200051fe32d.js"></script>
